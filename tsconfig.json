@@ -1,0 +1,12 @@
+{
+  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@hoyolab/*": ["src/hoyolab/*"],
+      "@kuro/*": ["src/modules/kuro/*"],
+      "@utils/*": ["src/utils/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  }
+}
