@@ -486,3 +486,4 @@ $RECYCLE.BIN/
 # Project files
 config.json
 package-lock.json
+dist 

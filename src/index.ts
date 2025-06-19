@@ -88,7 +88,7 @@ const main = async () => {
         );
         // End cron jobs
     } catch (error) {
-        console.error('Error connecting to MongoDB:', error);
+        console.error('Error:', error);
     }
 };
 
