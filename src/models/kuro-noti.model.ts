@@ -34,7 +34,4 @@ const KuroNotiSchema = new Schema<KuroNoti>(
     },
 );
 
-export const KuroNotiModel = mongoose.model<KuroNoti>(
-    'KuroNoti',
-    KuroNotiSchema,
-);
+export const KuroNotiModel = mongoose.model<KuroNoti>('KuroNoti', KuroNotiSchema);

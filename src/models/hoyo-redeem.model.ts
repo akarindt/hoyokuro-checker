@@ -39,7 +39,4 @@ const HoyoRedeemSchema = new Schema<HoyoRedeem>(
     },
 );
 
-export const HoyoRedeemModel = mongoose.model<HoyoRedeem>(
-    'HoyoRedeem',
-    HoyoRedeemSchema,
-);
+export const HoyoRedeemModel = mongoose.model<HoyoRedeem>('HoyoRedeem', HoyoRedeemSchema);

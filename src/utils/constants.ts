@@ -1,7 +1,6 @@
 export const WUWA_URL = 'https://wuthering.gg/codes';
 
-export const GRAY_RAVEN_URL =
-    'https://www.pocketgamer.com/punishing-gray-raven/codes/';
+export const GRAY_RAVEN_URL = 'https://www.pocketgamer.com/punishing-gray-raven/codes/';
 
 export const USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
@@ -15,3 +14,10 @@ export const WUWA_BOT_AVATAR =
 
 export const GRAY_RAVEN_BOT_AVATAR =
     'https://res.cloudinary.com/dbivuiucl/image/upload/v1750240005/mqdefault_a3gtmj.jpg';
+
+export const HOYOVERSE_RECORD_CARD_API =
+    'https://bbs-api-os.hoyolab.com/game_record/card/wapi/getGameRecordCard';
+
+export const CRON_CHECKIN = '0 0 0 * * *';
+export const CRON_REDEEM = '*/15 * * * *';
+export const CRON_REFRESH_HOYO_TOKEN = '0 */2 * * *';

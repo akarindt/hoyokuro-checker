@@ -1,31 +1,19 @@
-import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
-import {
-    BOT_AVATAR,
-    BOT_NAME,
-    USER_AGENT,
-    WUWA_BOT_AVATAR,
-    WUWA_URL,
-} from '@utils/constants.js';
+import { BOT_AVATAR, BOT_NAME, USER_AGENT, WUWA_BOT_AVATAR, WUWA_URL } from '@utils/constants.js';
 import axios from 'axios';
-import { getGlobals } from 'common-es';
-import path from 'path';
 import { KuroNotiModel } from '@models/kuro-noti.model.js';
 import { Client } from 'discord.js';
 import dayjs from 'dayjs';
+import { loadEnv } from '@utils/fn.js';
 
-const { __dirname } = getGlobals(import.meta.url);
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
-
+loadEnv();
 class WutheringWaves {
     private googleGenAI: GoogleGenAI;
 
     constructor() {
         const apiKey = process.env.GOOGLE_AI_API_KEY;
         if (!apiKey) {
-            throw new Error(
-                'GOOGLE_AI_API_KEY is not defined in the environment variables',
-            );
+            throw new Error('GOOGLE_AI_API_KEY is not defined in the environment variables');
         }
 
         this.googleGenAI = new GoogleGenAI({

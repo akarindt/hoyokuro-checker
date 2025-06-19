@@ -6,6 +6,7 @@ export type HoyoCookie = {
     _id: ObjectId;
     cookie: string;
     discordID: string;
+    redeemOption: ('zenless' | 'genshin' | 'starrail')[];
     createdAt: Date;
     updatedAt: Date;
 };
@@ -21,13 +22,16 @@ const HoyoCookieSchema = new Schema<HoyoCookie>(
             required: true,
             index: true,
         },
+        redeemOption: {
+            type: [String],
+            enum: ['zenless', 'genshin', 'starrail'],
+            required: true,
+            default: [],
+        },
     },
     {
         timestamps: true,
     },
 );
 
-export const HoyoCookieModel = mongoose.model<HoyoCookie>(
-    'HoyoCookie',
-    HoyoCookieSchema,
-);
+export const HoyoCookieModel = mongoose.model<HoyoCookie>('HoyoCookie', HoyoCookieSchema);
