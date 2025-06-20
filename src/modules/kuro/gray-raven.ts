@@ -50,7 +50,7 @@ class GrayRaven {
     public async checkCode(client: Client) {
         const codes = await this.getCodes();
         const noti = await KuroNotiModel.find({
-            $and: [{ code: { $not: { $in: codes } } }, { game: 'pgr' }],
+            $and: [{ notifiedCodes: { $not: { $in: codes } } }, { game: 'pgr' }],
         });
 
         await Promise.all(

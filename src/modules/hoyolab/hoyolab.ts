@@ -74,6 +74,7 @@ type HoyoverseCodeResponse = Record<string, Array<{ code: string; rewards: strin
 
 type HoyoverseConfig = {
     headers: Record<string, string>;
+    addtionalHeaders: Record<string, string>;
     ACT_ID: string;
     success: string;
     signed: string;
@@ -102,6 +103,8 @@ class HoyoLab {
                 headers: {
                     'User-Agent': USER_AGENT,
                     'x-rpc-signgame': 'zzz',
+                },
+                addtionalHeaders: {
                     Host: 'public-operation-nap.hoyoverse.com',
                 },
                 ACT_ID: 'e202406031448091',
@@ -125,6 +128,8 @@ class HoyoLab {
             genshin: {
                 headers: {
                     'User-Agent': USER_AGENT,
+                },
+                addtionalHeaders: {
                     Host: 'sg-hk4e-api.hoyoverse.com',
                 },
                 ACT_ID: 'e202102251931481',
@@ -148,6 +153,8 @@ class HoyoLab {
             starrail: {
                 headers: {
                     'User-Agent': USER_AGENT,
+                },
+                addtionalHeaders: {
                     Host: 'sg-hkrpg-api.hoyoverse.com',
                 },
                 ACT_ID: 'e202303301540311',
@@ -189,10 +196,10 @@ class HoyoLab {
 
     public async signIn(client: Client) {
         const accounts = await HoyoCookieModel.find({}).lean();
-        const accountPromises = accounts.map(async (account) => {
+        for (const account of accounts) {
             const cookie = account.cookie;
             const ltuid = cookie.match(/ltuid_v2=([^;]+)/);
-            if (!ltuid) return null;
+            if (!ltuid) continue;
 
             let accountDetailData: HoyoverseApiResponse<HoyoverseAccountData>;
             try {
@@ -204,123 +211,118 @@ class HoyoLab {
                         },
                     })
                     .json<HoyoverseApiResponse<HoyoverseAccountData>>();
+
+                if (accountDetailData.retcode !== 0) {
+                    console.warn(
+                        `Failed to fetch account details for UID ${ltuid[1]}. API Message: ${accountDetailData.message}`,
+                    );
+                    continue;
+                }
+
+                const gameids = account.redeemOption.map((x) => ({
+                    gameId: this.hoyoverseConfig[x].gameId,
+                    name: x,
+                }));
+
+                const accountDetails = accountDetailData.data.list.filter((x) =>
+                    gameids.map((y) => y.gameId).includes(x.game_id),
+                );
+
+                for (const detail of accountDetails) {
+                    const gameName = gameids.find((x) => x.gameId === detail.game_id)?.name;
+                    if (!gameName) continue;
+
+                    const gameConfig = this.hoyoverseConfig[gameName];
+                    if (!gameConfig) continue;
+
+                    let signData: HoyoverseApiResponse<HoyoverseCheckIn>;
+                    try {
+                        signData = await got
+                            .post(gameConfig.url.sign, {
+                                json: {
+                                    act_id: gameConfig.ACT_ID,
+                                },
+                                headers: {
+                                    ...gameConfig.headers,
+                                    Cookie: cookie,
+                                },
+                            })
+                            .json<HoyoverseApiResponse<HoyoverseCheckIn>>();
+                    } catch (error) {
+                        console.warn(`Failed to sign in for ${detail.game_name}. Error: ${error}`);
+                        continue;
+                    }
+
+                    if (signData.retcode !== 0) {
+                        console.warn(
+                            `Failed to sign in for ${detail.game_name}. API Message: ${signData.message}`,
+                        );
+                        continue;
+                    }
+
+                    const user = await client.users.fetch(account.discordID);
+                    if (!user) {
+                        console.warn(
+                            `User with ID ${account.discordID} not found, skipping notification.`,
+                        );
+                        continue;
+                    }
+
+                    await user.send({
+                        embeds: [
+                            {
+                                title: `Hoyoverse Sign In - ${gameConfig.gameName}`,
+                                color: 0xeb86c6,
+                                author: {
+                                    name: gameConfig.assets.author,
+                                    icon_url: gameConfig.assets.icon,
+                                },
+                                fields: [
+                                    {
+                                        name: 'Nickname',
+                                        value: detail.nickname,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: 'UID',
+                                        value: detail.game_role_id,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: 'Rank',
+                                        value: detail.level.toString(),
+                                        inline: true,
+                                    },
+                                    {
+                                        name: 'Region',
+                                        value: detail.region,
+                                        inline: true,
+                                    },
+                                    {
+                                        name: 'Result',
+                                        value:
+                                            signData.retcode === 0
+                                                ? gameConfig.success
+                                                : gameConfig.signed,
+                                        inline: false,
+                                    },
+                                ],
+                                timestamp: new Date().toISOString(),
+                                footer: {
+                                    text: `${gameConfig.assets.gameName} - Hoyoverse Sign In`,
+                                    icon_url: gameConfig.assets.icon,
+                                },
+                            },
+                        ],
+                    });
+                }
             } catch (error) {
                 console.warn(
                     `Failed to fetch account details for UID ${ltuid[1]}. Error: ${error}`,
                 );
-                return null;
+                continue;
             }
-
-            if (accountDetailData.retcode !== 0) {
-                console.warn(
-                    `Failed to fetch account details for UID ${ltuid[1]}. API Message: ${accountDetailData.message}`,
-                );
-                return null;
-            }
-
-            const gameids = account.redeemOption.map((x) => ({
-                gameId: this.hoyoverseConfig[x].gameId,
-                name: x,
-            }));
-
-            const accountDetails = accountDetailData.data.list.filter((x) =>
-                gameids.map((y) => y.gameId).includes(x.game_id),
-            );
-
-            const signPromises = accountDetails.map(async (detail) => {
-                const gameName = gameids.find((x) => x.gameId === detail.game_id)?.name;
-                if (!gameName) return null;
-
-                const gameConfig = this.hoyoverseConfig[gameName];
-                if (!gameConfig) return null;
-
-                let signData: HoyoverseApiResponse<HoyoverseCheckIn>;
-                try {
-                    signData = await got
-                        .post(gameConfig.url.sign, {
-                            json: {
-                                act_id: gameConfig.ACT_ID,
-                            },
-                            headers: {
-                                ...gameConfig.headers,
-                                Cookie: cookie,
-                            },
-                        })
-                        .json<HoyoverseApiResponse<HoyoverseCheckIn>>();
-                } catch (error) {
-                    console.warn(`Failed to sign in for ${detail.game_name}. Error: ${error}`);
-                    return null;
-                }
-
-                console.log(signData);
-
-                if (signData.retcode !== 0) {
-                    console.warn(
-                        `Failed to sign in for ${detail.game_name}. API Message: ${signData.message}`,
-                    );
-                    return null;
-                }
-
-                const user = await client.users.fetch(account.discordID);
-                if (!user) {
-                    console.warn(
-                        `User with ID ${account.discordID} not found, skipping notification.`,
-                    );
-                    return null;
-                }
-
-                await user.send({
-                    embeds: [
-                        {
-                            title: `Hoyoverse Sign In - ${gameConfig.gameName}`,
-                            color: 0xeb86c6,
-                            author: {
-                                name: gameConfig.assets.author,
-                                icon_url: gameConfig.assets.icon,
-                            },
-                            fields: [
-                                {
-                                    name: 'Nickname',
-                                    value: detail.nickname,
-                                    inline: true,
-                                },
-                                {
-                                    name: 'UID',
-                                    value: detail.game_role_id,
-                                    inline: true,
-                                },
-                                {
-                                    name: 'Rank',
-                                    value: detail.level.toString(),
-                                    inline: true,
-                                },
-                                {
-                                    name: 'Region',
-                                    value: detail.region,
-                                    inline: true,
-                                },
-                                {
-                                    name: 'Result',
-                                    value: signData.data.success
-                                        ? gameConfig.success
-                                        : gameConfig.signed,
-                                    inline: false,
-                                },
-                            ],
-                            timestamp: new Date().toISOString(),
-                            footer: {
-                                text: `${gameConfig.assets.gameName} - Hoyoverse Sign In`,
-                                icon_url: gameConfig.assets.icon,
-                            },
-                        },
-                    ],
-                });
-                return;
-            });
-
-            await Promise.all(signPromises);
-        });
-        await Promise.all(accountPromises);
+        }
     }
 
     public async redeemCode(client: Client) {
@@ -430,6 +432,7 @@ class HoyoLab {
                             method: isPost ? 'POST' : 'GET',
                             headers: {
                                 ...gameConfig.headers,
+                                ...gameConfig.addtionalHeaders,
                                 Cookie: cookieData,
                                 scheme: 'https',
                             },

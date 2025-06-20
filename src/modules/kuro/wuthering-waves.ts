@@ -44,7 +44,7 @@ class WutheringWaves {
     public async checkCode(client: Client) {
         const codes = await this.getCodes();
         const noti = await KuroNotiModel.find({
-            $and: [{ code: { $not: { $in: codes } } }, { game: 'wuwa' }],
+            $and: [{ notifiedCodes: { $not: { $in: codes } } }, { game: 'wuwa' }],
         });
 
         await Promise.all(
