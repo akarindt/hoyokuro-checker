@@ -51,7 +51,7 @@ const main = async () => {
         client.once('ready', () => {
             console.log(`Logged in as ${client.user?.tag}`);
         });
-        client.login(discordToken);
+        await client.login(discordToken);
         // End Discord client initialization
 
         //Start cron jobs
@@ -79,8 +79,8 @@ const main = async () => {
             CRON_REFRESH_HOYO_TOKEN,
             async () => {
                 await hoyolab.refreshCookie(client);
-                await wutheringWaves.checkCode(client);
-                await grayRaven.checkCode(client);
+                // await wutheringWaves.checkCode(client);
+                // await grayRaven.checkCode(client);
             },
             null,
             true,
