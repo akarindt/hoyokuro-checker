@@ -183,15 +183,19 @@ class HoyoLab {
         if (!gameConfig) {
             throw new Error(`Game configuration for ${game} not found.`);
         }
-        const data = await got
-            .get(gameConfig.url.checkCodeWeb, {
-                headers: {
-                    'User-Agent': USER_AGENT,
-                },
-            })
-            .json<HoyoverseCodeResponse>();
-
-        return data['active'];
+        try {
+            const data = await got
+                .get(gameConfig.url.checkCodeWeb, {
+                    headers: {
+                        'User-Agent': USER_AGENT,
+                    },
+                })
+                .json<HoyoverseCodeResponse>();
+    
+            return data['active'];
+        } catch {
+            return [];
+        }
     }
 
     public async signIn(client: Client) {
